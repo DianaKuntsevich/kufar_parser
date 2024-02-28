@@ -88,13 +88,11 @@ def get_flat_data(link: str) -> dict | None:
             return
         note['price'] = int(price)
         # print(price)
-        try:
-            image = soup.find('img', class_="styles_slide__image__YIPad styles_slide__image__vertical__QdnkQ")['src']
-        except Exception as e:
-            image = ''
 
-        note['image'] = image
-        print(image)
+        image = soup.find_all('div', class_=['styles_thumbnail__slide__rPNxe'])
+        for img in image:
+            imag = img.find('img')['src']
+            print(imag)
     #     try:
     #         description = soup.find('div',
     #                                 class_=['description_wrapper__tlUQE']).text
@@ -128,4 +126,5 @@ def run():
 
 
 run()
+
 
