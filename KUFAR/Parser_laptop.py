@@ -80,21 +80,21 @@ def get_flat_data(link: str) -> dict | None:
         soup = BeautifulSoup(response.text, 'lxml')
         title = soup.find('h1', class_="styles_brief_wrapper__title__Ksuxa").text
         note['title'] = title
-        print(title)
+        # print(title)
         try:
             price = soup.find('span', class_="styles_main__eFbJH").text
             price = price.replace('р.', '').replace(' ', '').replace('\xa0', '').strip()
         except Exception as e:
             return
         note['price'] = int(price)
-        print(price)
-    #     try:
-    #         image = soup.find('img', class_="", alt="", src=True)['src']
-    #     except Exception as e:
-    #         image = ''
-    #
-    #     flat['image'] = image
-    #     # print(image)
+        # print(price)
+        try:
+            image = soup.find('img', class_="styles_slide__image__YIPad styles_slide__image__vertical__QdnkQ")['src']
+        except Exception as e:
+            image = ''
+
+        note['image'] = image
+        print(image)
     #     try:
     #         description = soup.find('div',
     #                                 class_=['description_wrapper__tlUQE']).text
