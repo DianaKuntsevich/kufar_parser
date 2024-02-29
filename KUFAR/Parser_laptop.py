@@ -4,6 +4,7 @@ from pprint import pprint
 import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+import json
 
 
 URL = 'https://www.kufar.by/l/r~minsk/noutbuki?elementType=categories'
@@ -72,50 +73,107 @@ def get_all_links() -> list:
 
 def get_flat_data(link: str) -> dict | None:
     note = {
-
+        'title': '',
+        'price': '',
+        'image': '',
+        'description': '',
+        'producer': '',
+        'diagonal': '',
+        'resolution': '',
+        'op': '',
+        'processor': '',
+        'ram': '',
+        'videocard': '',
+        'hdd_type': '',
+        'hdd_volume': '',
+        'battery': '',
+        'condition': ''
     }
 
-    response = requests.get(link, headers=HEADERS)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'lxml')
-        title = soup.find('h1', class_="styles_brief_wrapper__title__Ksuxa").text
-        note['title'] = title
-        # print(title)
-        try:
-            price = soup.find('span', class_="styles_main__eFbJH").text
-            price = price.replace('р.', '').replace(' ', '').replace('\xa0', '').strip()
-        except Exception as e:
-            return
-        note['price'] = int(price)
-        # print(price)
+    response = requests.get(link, headers=HEADERS).text
+    soup = BeautifulSoup(response, 'lxml')
+    data = soup.find('script', id="__NEXT_DATA__").text
 
-        image = soup.find_all('div', class_=['styles_thumbnail__slide__rPNxe'])
-        for img in image:
-            imag = img.find('img')['src']
-            print(imag)
-    #     try:
-    #         description = soup.find('div',
-    #                                 class_=['description_wrapper__tlUQE']).text
-    #         description = description.replace('\n', '')
-    #     except Exception as e:
-    #
-    #         description = ''
-    #     flat['description'] = description
-    #     # print(description)
-    #
-    #     params = soup.find_all('li', class_="relative py-1")
-    #     for param in params:
-    #         key = param.find('span').text
-    #         if key not in PARAM_PATTERN:
-    #             continue
-    #         value = param.find(['p', 'a']).text.replace('г. ', '').replace(' м²', '')
-    #         flat[PARAM_PATTERN[key]] = value
-    # else:
-    #     print(f'Bad request url : {response.url} | Status: {response.status_code}')
-    # return note
-#
-#
-#
+    data = json.loads(data)
+    data = data['props']['initialState']
+    try:
+        title = data['adView']['data']['title']
+    except Exception as e:
+        title = ''
+    try:
+        price = data['adView']['data']['price'].replace('р.', '')
+    except Exception as e:
+        price = ''
+    try:
+        image = data['adView']['data']['images']['thumbnails']
+    except Exception as e:
+        image = ''
+    try:
+        description = data['adView']['data']['description']
+    except Exception as e:
+        description = ''
+    try:
+        producer = data['adView']['data']['adParams']['computersLaptopBrand']['vl']
+    except Exception as e:
+        producer = ''
+    try:
+        diagonal = data['adView']['data']['adParams']['computersLaptopDiagonal']['vl']
+    except Exception as e:
+        diagonal = ''
+    try:
+        resolution = data['adView']['data']['adParams']['computersLaptopResolution']['vl']
+    except Exception as e:
+        resolution = ''
+    try:
+        op = data['adView']['data']['adParams']['computersLaptopOs']['vl']
+    except Exception as e:
+        op = ''
+    try:
+        processor = data['adView']['data']['adParams']['computersLaptopProcessor']['vl']
+    except Exception as e:
+        processor = ''
+    try:
+        ram = data['adView']['data']['adParams']['computerEquipmentLaptopsRam']['vl']
+    except Exception as e:
+        ram = ''
+    try:
+        videocard = data['adView']['data']['adParams']['computersLaptopVideocard']['vl']
+    except Exception as e:
+        videocard = ''
+    try:
+        hdd_type = data['adView']['data']['adParams']['computersLaptopHddType']['vl']
+    except Exception as e:
+        hdd_type = ''
+    try:
+        hdd_volume = data['adView']['data']['adParams']['computersLaptopHddVolume']['vl']
+    except Exception as e:
+        hdd_volume = ''
+    try:
+        battery = data['adView']['data']['adParams']['computersLaptopBatteryLife']['vl']
+    except Exception as e:
+        battery = ''
+    try:
+        condition = data['adView']['data']['adParams']['condition']['vl']
+    except Exception as e:
+        condition = ''
+
+    note['title'] = title
+    note['price'] = price
+    note['image'] = image
+    note['description'] = description
+    note['producer'] = producer
+    note['diagonal'] = diagonal
+    note['resolution'] = resolution
+    note['op'] = op
+    note['processor'] = processor
+    note['ram'] = ram
+    note['videocard'] = videocard
+    note['hdd_type'] = hdd_type
+    note['hdd_volume'] = hdd_volume
+    note['battery'] = battery
+    note['condition'] = condition
+
+
 def run():
     links = get_all_links()
 
