@@ -12,26 +12,10 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-    'Alt-Used': 'realt.by',
     'Connection': 'keep-alive'
 }
 
-PARAM_PATTERN = {
-    'Количество комнат': 'rooms',
-    'Площадь общая': 'square',
-    'Год постройки': 'year',
-    'Этаж / этажность': 'floor',
-    'Тип дома': 'type_house',
-    'Область': 'region',
-    'Населенный пункт': 'city',
-    'Улица': 'street',
-    'Район города': 'district',
-    'Координаты': 'coordinates'
 
-
-
-
-}
 # def get_page():
 #     URL = ''
 #     response = requests.get(URL, headers=HEADERS)
