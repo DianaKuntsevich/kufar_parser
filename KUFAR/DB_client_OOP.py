@@ -1,5 +1,6 @@
 import psycopg2
 from environs import Env
+from psycopg2._psycopg import cursor
 from psycopg2 import extras
 
 env = Env()
@@ -27,7 +28,34 @@ class DBPostgres:
         self.__host = host
         self.__port = port
 
-    def __connect_db(self, factory: str=None):
+
+    def fetch_one(self, query: str, data=None, factory=None, clean=False):
+        try:
+            with self.__connect_db(factory) as cur:
+                self.__execute(cur, query, data)
+                return self.__fetch(cur, clean)
+        except (Exception, psycopg2.Error) as error:
+            self.__error(error)
+
+
+    def fetch_all(self, query: str, data=None, factory=None):
+        try:
+            with self.__connect_db(factory) as cur:
+                self.__execute(cur, query, data)
+                return cur.fetchall()
+        except (Exception, psycopg2.Error) as error:
+            self.__error(error)
+
+
+    def update_query(self, query:str, data=None, message='OK'):
+        try:
+            with self.__connect_db() as cur:
+                self.__execute(cur, query, data)
+                print(message)
+        except (Exception, psycopg2.Error) as error:
+            self.__error(error)
+
+    def __connect_db(self, factory: str = None):
         '''
 
         :param factory:
@@ -50,3 +78,37 @@ class DBPostgres:
             cur = conn.cursor()
 
         return cur
+
+    @staticmethod
+    def __execute(cur: cursor, query: str, data=None):
+        if data:
+            if isinstance(data, list):
+                cur.executemany(query, data)
+            else:
+                cur.execute(query, data)
+        else:
+            cur.execute(query)
+
+
+    @staticmethod
+    def __fetch(cur: cursor, clean):
+        if clean:
+            fetch = cur.fetchone()[0]
+        else:
+            fetch = cur.fetchone()
+
+        return fetch
+
+    @staticmethod
+    def __error(error):
+        print(error)
+
+db = DBPostgres(DBNAME, DBUSER, DBPASSWORD, DBHOST, DBPORT)
+# data = [('Maria', 25), ('Olga', 30)]
+# db.update_query('''INSERT INTO user_test(name, age) VALUES (%s, 45)''', ('Vasiliy',))
+
+# data = db.fetch_all('''SELECT * FROM user_test WHERE age = %s''', (30,), factory='dict')
+# print([dict(i) for i in data])
+
+# data = db.fetch_one('''SELECT name FROM user_test WHERE id = %s''', (5,), clean=True)
+# print(data)
