@@ -173,6 +173,8 @@ def get_flat_data(link: str) -> dict | None:
     note['battery'] = battery
     note['condition'] = condition
 
+    return note
+
 
 def run():
     links = get_all_links()
@@ -180,7 +182,6 @@ def run():
     for link in tqdm(links, desc='Parsing data'):
         data = get_flat_data(link)
         # pprint(data)
-
 
 
 run()
