@@ -3,14 +3,14 @@ from dataclasses import dataclass, field
 
 @dataclass(slots=True)
 class Notebook:
-    url: str
+    link: str
     title: str = ''
     price: float = 0.0
     description: str = ''
     producer: str = ''
     diagonal: str = ''
     resolution: str = ''
-    op: str = ''
+    os: str = ''
     processor: str = ''
     ram: str = ''
     video_card: str = ''

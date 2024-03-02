@@ -16,19 +16,18 @@ HEADERS = {
 }
 
 
-# def get_page():
-#     URL = ''
-#     response = requests.get(URL, headers=HEADERS)
-#     if response.status_code == 200:
-#         soup = BeautifulSoup(response.text, 'lxml')
-#         pages = soup.find_all('a',
-#                               class_="styles_link__8m3I9")
-#         print(pages)
-#         next_page = 'https://www.kufar.by/' + str(pages)
-#         print(next_page)
-#         return next_page
-#     else:
-#         print(f'Bad request url : {response.url} | Status: {response.status_code}')
+def get_page():
+    page = []
+    response = requests.get(URL, headers=HEADERS)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'lxml')
+        pages = soup.find('div', {'data-name':'listings-pagination'}).find_all('a')
+        for i in pages:
+            page.append('https://www.kufar.by/' + i.get('href'))
+        print(page)
+        return page
+    else:
+        print(f'Bad request url : {response.url} | Status: {response.status_code}')
 
 #
 def get_all_links() -> list:
@@ -168,6 +167,7 @@ def run():
         # pprint(data)
 
 
-run()
+# run()
+get_page()
 
 
