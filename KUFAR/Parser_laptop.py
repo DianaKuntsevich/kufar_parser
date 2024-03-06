@@ -17,19 +17,27 @@ HEADERS = {
 
 
 def get_page():
-    page = []
-    response = requests.get(URL, headers=HEADERS)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'lxml')
-        pages = soup.find('div', {'data-name':'listings-pagination'}).find_all('a')
-        for i in pages:
-            page.append('https://www.kufar.by/' + i.get('href'))
-        print(page)
-        return page
-    else:
-        print(f'Bad request url : {response.url} | Status: {response.status_code}')
+    page = ['https://www.kufar.by/l/r~minsk/noutbuki']
+    for i in range(135):
+        url = page[-1]
+        resp = requests.get(url).text
+        soup = BeautifulSoup(resp, 'lxml')
+        data = soup.find('script', id="__NEXT_DATA__").text
 
-#
+        data = json.loads(data)
+        data = data['props']['initialState']
+        pag = data['listing']['pagination']
+        for j in pag:
+            if j['label'] == 'next':
+                token = 'https://www.kufar.by/l/r~minsk/noutbuki?cursor=' + j['token']
+                page.append(token)
+        i += 1
+
+    return page
+
+
+
+
 def get_all_links() -> list:
     result = []
     response = requests.get(URL, headers=HEADERS)

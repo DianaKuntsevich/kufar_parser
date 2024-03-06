@@ -17,6 +17,27 @@ class ParserNotebook:
         'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
         'Connection': 'keep-alive'
     }
+
+    @staticmethod
+    def get_page() -> list:
+        url = ['https://www.kufar.by/l/r~minsk/noutbuki']
+        for i in range(135):
+            page = url[-1]
+            resp = requests.get(page).text
+            soup = BeautifulSoup(resp, 'lxml')
+            data = soup.find('script', id="__NEXT_DATA__").text
+
+            data = json.loads(data)
+            data = data['props']['initialState']
+            pag = data['listing']['pagination']
+            for j in pag:
+                if j['label'] == 'next':
+                    token = 'https://www.kufar.by/l/r~minsk/noutbuki?cursor=' + j['token']
+                    url.append(token)
+            i += 1
+
+        return url
+
     @classmethod
     def get_soup(cls, url: str) -> BeautifulSoup:
         response = requests.get(url, headers=cls.HEADERS)
@@ -25,7 +46,6 @@ class ParserNotebook:
             return soup
         else:
             print(f'{url} | {response.status_code}')
-
 
     @staticmethod
     def _get_item_links(soup: BeautifulSoup) -> list:
@@ -116,14 +136,14 @@ class ParserNotebook:
         return notebook
 
     def run(self):
-        url = 'https://www.kufar.by/l/r~minsk/noutbuki'
+        url = self.get_page()
         links = self._get_item_links(self.get_soup(url))
         notebooks = []
         for link in tqdm(links, desc='Parsing data'):
             soup = self.get_soup(link)
             if soup:
                 notebook_data = self._get_notebook_data(soup, link)
-                pprint(notebook_data)
+                notebooks.append(notebook_data)
 
 
 
