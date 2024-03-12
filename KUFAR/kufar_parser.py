@@ -5,9 +5,63 @@ from bs4 import BeautifulSoup
 import re
 from pprint import pprint
 
-from tqdm import tqdm
+from environs import Env
 
+from db_client import DBPostgres
+from tqdm import tqdm
+from dataclasses import astuple
 from KUFAR.models import Notebook
+
+env = Env()
+env.read_env()
+
+DBNAME = env('DBNAME')
+DBUSER = env('DBUSER')
+DBPASSWORD = env('DBPASSWORD')
+DBHOST = env('DBHOST')
+DBPORT = env('DBPORT')
+
+
+class NoteDB(DBPostgres):
+    def save_data(self, data: list[Notebook]) -> None:
+        data = [astuple(i) for i in data]
+        self.update_query('''WITH note_id as (
+        INSERT INTO notebook(link, title, price, description, producer, diagonal, 
+        resolution, os, processor, ram, video_card, hdd_type, hdd_volume, battery, condition) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (link) DO UPDATE SET price = excluded.price
+        RETURNING id
+        )
+        INSERT INTO image(image, notebook_id) VALUES (unnest(COALESCE(%s, ARRAY[]::text[])), (SELECT id FROM note_id))
+        ON CONFLICT (image) DO NOTHING
+        ''', data)
+
+    def crete_table(self):
+        self.update_query('''
+        CREATE TABLE IF NOT EXISTS notebook (
+        id SERIAL PRIMARY KEY,
+        link varchar(160) UNIQUE,
+        title varchar(500),
+        price NUMERIC(10, 2),
+        description TEXT,
+        producer varchar(100),
+        diagonal varchar(100),
+        resolution varchar(100),
+        os varchar(100),
+        processor varchar(100),
+        ram varchar(100),
+        video_card varchar(100),
+        hdd_type varchar(100),
+        hdd_volume varchar(100),
+        battery varchar(100),
+        condition varchar(100) 
+        );
+        CREATE TABLE IF NOT EXISTS image(
+        id serial PRIMARY KEY,
+        image varchar(160) UNIQUE,
+        notebook_id integer REFERENCES notebook(id)
+        )
+        ''')
 
 
 class ParserNotebook:
@@ -17,26 +71,9 @@ class ParserNotebook:
         'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
         'Connection': 'keep-alive'
     }
-
-    @staticmethod
-    def get_page() -> list:
-        url = ['https://www.kufar.by/l/r~minsk/noutbuki']
-        for i in range(135):
-            page = url[-1]
-            resp = requests.get(page).text
-            soup = BeautifulSoup(resp, 'lxml')
-            data = soup.find('script', id="__NEXT_DATA__").text
-
-            data = json.loads(data)
-            data = data['props']['initialState']
-            pag = data['listing']['pagination']
-            for j in pag:
-                if j['label'] == 'next':
-                    token = 'https://www.kufar.by/l/r~minsk/noutbuki?cursor=' + j['token']
-                    url.append(token)
-            i += 1
-
-        return url
+    DB = NoteDB(
+        DBNAME, DBUSER, DBPASSWORD, DBHOST, DBPORT
+    )
 
     @classmethod
     def get_soup(cls, url: str) -> BeautifulSoup:
@@ -62,7 +99,14 @@ class ParserNotebook:
             if price.isdigit():
                 links.append(link)
 
-        return links
+        js_data = soup.find('script', id="__NEXT_DATA__").text
+        data = json.loads(js_data)['props']['initialState']['listing']['pagination']
+        try:
+            next_page_token = list(filter(lambda el : el['label'] == 'next', data))[0]['token']
+        except Exception as e:
+            next_page_token = ''
+
+        return [links, next_page_token]
 
     @staticmethod
     def _get_notebook_data(soup: BeautifulSoup, link: str) -> Notebook:
@@ -77,9 +121,9 @@ class ParserNotebook:
         except Exception as e:
             notebook.title = ''
         try:
-            notebook.price = data['adView']['data']['price'].replace('р.', '')
+            notebook.price = float(data['adView']['data']['discount']['price'].replace('р.', '').replace(' ', ''))
         except Exception as e:
-            notebook.price = ''
+            notebook.price = float(data['adView']['data']['price'].replace('р.', '').replace(' ', ''))
         try:
             notebook.image = data['adView']['data']['images']['thumbnails']
         except Exception as e:
@@ -136,14 +180,27 @@ class ParserNotebook:
         return notebook
 
     def run(self):
-        url = self.get_page()
-        links = self._get_item_links(self.get_soup(url))
-        notebooks = []
-        for link in tqdm(links, desc='Parsing data'):
-            soup = self.get_soup(link)
-            if soup:
-                notebook_data = self._get_notebook_data(soup, link)
-                notebooks.append(notebook_data)
+        self.DB.crete_table()
+        url = 'https://www.kufar.by/l/r~minsk/noutbuki'
+        flag = True
+        while flag:
+            links_and_token = self._get_item_links(self.get_soup(url))
+            links = links_and_token[0]
+            notebooks = []
+            for link in tqdm(links, desc='Parsing data'):
+                soup = self.get_soup(link)
+                if soup:
+                    notebook_data = self._get_notebook_data(soup, link)
+                    notebooks.append(notebook_data)
+                else:
+                    continue
+            self.DB.save_data(notebooks)
+
+            token = links_and_token[1]
+            if not token:
+                flag = False
+
+            url = f'https://www.kufar.by/l/r~minsk/noutbuki?cursor={token}'
 
 
 
