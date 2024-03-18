@@ -26,13 +26,13 @@ class NoteDB(DBPostgres):
     def save_data(self, data: list[Notebook]) -> None:
         data = [astuple(i) for i in data]
         self.update_query('''WITH note_id as (
-        INSERT INTO notebook(link, title, price, description, producer, diagonal, 
+        INSERT INTO product_app_notebook(link, title, price, description, producer, diagonal, 
         resolution, os, processor, ram, video_card, hdd_type, hdd_volume, battery, condition) 
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (link) DO UPDATE SET price = excluded.price
         RETURNING id
         )
-        INSERT INTO image(image, notebook_id) VALUES (unnest(COALESCE(%s, ARRAY[]::text[])), (SELECT id FROM note_id))
+        INSERT INTO product_app_image(image, notebook_id) VALUES (unnest(COALESCE(%s, ARRAY[]::text[])), (SELECT id FROM note_id))
         ON CONFLICT (image) DO NOTHING
         ''', data)
 
@@ -180,7 +180,7 @@ class ParserNotebook:
         return notebook
 
     def run(self):
-        self.DB.crete_table()
+        # self.DB.crete_table()
         url = 'https://www.kufar.by/l/r~minsk/noutbuki'
         flag = True
         while flag:
