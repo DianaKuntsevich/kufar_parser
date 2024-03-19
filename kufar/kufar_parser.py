@@ -10,7 +10,7 @@ from environs import Env
 from db_client import DBPostgres
 from tqdm import tqdm
 from dataclasses import astuple
-from KUFAR.models import Notebook
+from kufar.models import Notebook
 
 env = Env()
 env.read_env()

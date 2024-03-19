@@ -2,6 +2,8 @@ import psycopg2
 from environs import Env
 from psycopg2._psycopg import cursor
 from psycopg2 import extras
+from faker import Faker
+from random import randint
 
 env = Env()
 env.read_env()
@@ -103,7 +105,7 @@ class DBPostgres:
     def __error(error):
         print(error)
 
-db = DBPostgres(DBNAME, DBUSER, DBPASSWORD, DBHOST, DBPORT)
+# db = DBPostgres(DBNAME, DBUSER, DBPASSWORD, DBHOST, DBPORT)
 # data = [('Maria', 25), ('Olga', 30)]
 # db.update_query('''INSERT INTO user_test(name, age) VALUES (%s, 45)''', ('Vasiliy',))
 
@@ -112,3 +114,45 @@ db = DBPostgres(DBNAME, DBUSER, DBPASSWORD, DBHOST, DBPORT)
 
 # data = db.fetch_one('''SELECT name FROM user_test WHERE id = %s''', (5,), clean=True)
 # print(data)
+db = DBPostgres(DBNAME, DBUSER, DBPASSWORD, DBHOST, DBPORT)
+
+# db.update_query('''CREATE TABLE person(
+# id serial PRIMARY KEY,
+# name varchar(100),
+# surname varchar(100),
+# age integer
+# );
+# CREATE TABLE tel(
+# id serial PRIMARY KEY,
+# number varchar(15),
+# person_id integer REFERENCES person(id)
+# )''')
+fake = Faker('RU')
+person = []
+for i in range(500):
+    names = fake.name().split()
+    age = randint(1, 70)
+    if i % 2:
+        tel = [f'+375{randint(1000000, 9000000)}' for j in range(5)]
+    else:
+        tel = []
+    name = names[1]
+    surname = names[0]
+    person.append((name, surname, age, tel))
+# Сохранение в БД данных (долгое)
+# for i in person:
+#     db.update_query('''INSERT INTO person(name, surname, age) VALUES (%s, %s, %s)''', i[:-1])
+#     for t in i[-1]:
+#         db.update_query('''INSERT INTO tel(number, person_id) VALUES (%s, (SELECT id FROM person WHERE name= %s))''', (t, i[0]))
+
+
+# Хороший быстрый запрос на добавление в БД ( не заботает с пустым списком)
+# for i in person:
+#     db.update_query('''WITH person_id as (INSERT INTO person(name, surname, age) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING RETURNING id)
+#     INSERT INTO tel(number, person_id) VALUES (unnest(%s), (SELECT id FROM person_id)) ON CONFLICT DO NOTHING
+#     ''', i)
+
+for i in person:
+    db.update_query('''WITH person_id as (INSERT INTO person(name, surname, age) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING RETURNING id) 
+    INSERT INTO tel(number, person_id) VALUES (unnest(COALESCE(%s, ARRAY[]::text[])), (SELECT id FROM person_id)) ON CONFLICT DO NOTHING
+    ''', i)

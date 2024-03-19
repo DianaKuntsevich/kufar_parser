@@ -31,6 +31,7 @@ def get_page():
             if j['label'] == 'next':
                 token = 'https://www.kufar.by/l/r~minsk/noutbuki?cursor=' + j['token']
                 page.append(token)
+                print(page)
         i += 1
 
     return page
