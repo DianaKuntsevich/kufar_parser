@@ -125,7 +125,7 @@ class ParserNotebook:
         except Exception as e:
             notebook.price = float(data['adView']['data']['price'].replace('р.', '').replace(' ', ''))
         try:
-            notebook.image = data['adView']['data']['images']['thumbnails']
+            notebook.image = data['adView']['data']['images']
         except Exception as e:
             notebook.image = ''
         try:
